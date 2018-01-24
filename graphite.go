@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/rcrowley/go-metrics"
+	metrics "github.com/rcrowley/go-metrics"
 )
 
 // Config provides a container with configuration parameters for
@@ -58,12 +59,13 @@ func graphite(c *Config) error {
 	now := time.Now().Unix()
 	du := float64(c.DurationUnit)
 	flushSeconds := float64(c.FlushInterval) / float64(time.Second)
-	conn, err := net.DialTCP("tcp", nil, c.Addr)
-	if nil != err {
-		return err
+	f, err := os.OpenFile("metrics.out", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
+	if err != nil {
+		panic(err)
 	}
-	defer conn.Close()
-	w := bufio.NewWriter(conn)
+	defer f.Close()
+
+	w := bufio.NewWriter(f)
 	c.Registry.Each(func(name string, i interface{}) {
 		switch metric := i.(type) {
 		case metrics.Counter:
